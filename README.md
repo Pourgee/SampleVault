@@ -95,28 +95,34 @@ open SampleVault.xcodeproj
 - [x] Background file scanner with progress
 - [x] Basic sample list view
 
-### Phase 2: Playback (In Progress)
+### Phase 2: Playback ✅
 
-- [ ] AVAudioEngine setup
-- [ ] Waveform generation and caching
-- [ ] Waveform view component
-- [ ] Play/pause/stop controls
-- [ ] Keyboard shortcuts
+- [x] AVAudioEngine setup
+- [x] Waveform generation and caching
+- [x] Waveform view component
+- [x] Play/pause/stop controls
+- [x] Keyboard shortcuts (Space, Esc)
+- [x] Scrubbing and loop mode
+- [x] Volume control
+- [x] Playback integration in UI
 
-### Phase 3: Organization
+### Phase 3: Organization (Partially Complete)
 
-- [ ] Category sidebar
-- [ ] Tag management (add/remove/edit)
-- [ ] Favorites toggle
-- [ ] Auto-categorization improvements
-- [ ] Batch tagging
+- [x] Category sidebar
+- [x] Tag management (add/remove)
+- [x] Favorites toggle
+- [x] Auto-categorization
+- [ ] Edit tags UI
+- [ ] Batch tagging UI
+- [ ] Custom categories
 
-### Phase 4: Search & Filter
+### Phase 4: Search & Filter (Mostly Complete)
 
-- [ ] Full-text search optimization
-- [ ] Advanced filter panel
-- [ ] Sort options
+- [x] Full-text search with FTS5
+- [x] Advanced filter panel (BPM, key, category)
+- [x] Sort options (name, date, duration, BPM, last played)
 - [ ] Smart folders / saved searches
+- [ ] Recent searches history
 
 ### Phase 5: Analysis
 
@@ -151,10 +157,13 @@ open SampleVault.xcodeproj
 
 ### Playback
 
-- Click sample row to preview
-- Press Space to play/pause
-- Press Esc to stop
-- Drag waveform to scrub
+- **Double-click** sample row to play
+- **Hover** and click play button for quick preview
+- **Space** to play/pause current sample
+- **Esc** to stop playback
+- **Click** waveform to seek/scrub
+- **Loop** toggle for continuous playback
+- **Volume** slider for playback level
 
 ### Logic Pro Integration
 
@@ -168,7 +177,8 @@ open SampleVault.xcodeproj
 |--------|--------|--------|
 | Import speed | 1,000 samples < 60s | ✅ |
 | Search latency | < 100ms for 10k samples | ✅ |
-| Playback latency | < 50ms to first audio | ⏳ |
+| Playback latency | < 50ms to first audio | ✅ |
+| Waveform render | < 100ms (cached) | ✅ |
 | Memory usage | < 200MB for 10k library | ✅ |
 | Cold launch | < 2s to interactive | ✅ |
 

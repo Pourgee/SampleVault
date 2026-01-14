@@ -34,16 +34,26 @@ struct SampleRow: View {
     let sample: Sample
 
     @State private var isHovering = false
+    @ObservedObject var audioPlayer = AudioPlayer.shared
+
+    var isPlayingThisSample: Bool {
+        audioPlayer.currentSample?.id == sample.id && audioPlayer.isPlaying
+    }
 
     var body: some View {
         HStack(spacing: 12) {
             // Play indicator / category icon
             ZStack {
                 Circle()
-                    .fill(Color.gray.opacity(0.2))
+                    .fill(isPlayingThisSample ? Color.accentColor.opacity(0.2) : Color.gray.opacity(0.2))
                     .frame(width: 36, height: 36)
 
-                if let category = sample.category {
+                if isPlayingThisSample {
+                    Image(systemName: "waveform")
+                        .font(.title3)
+                        .foregroundStyle(.accentColor)
+                        .symbolEffect(.variableColor.iterative, isActive: true)
+                } else if let category = sample.category {
                     Text(category.icon)
                         .font(.title3)
                 } else {
@@ -113,7 +123,13 @@ struct SampleRow: View {
                     .buttonStyle(.plain)
 
                     Button(action: {
-                        // Play sample (will implement in Phase 2)
+                        Task {
+                            do {
+                                try await AudioPlayer.shared.loadAndPlay(sample)
+                            } catch {
+                                print("Failed to play sample: \(error)")
+                            }
+                        }
                     }) {
                         Image(systemName: "play.circle")
                     }
@@ -151,6 +167,20 @@ struct SampleRow: View {
         .contentShape(Rectangle())
         .onHover { hovering in
             isHovering = hovering
+        }
+        .onTapGesture(count: 2) {
+            // Double-click to play
+            Task {
+                do {
+                    if audioPlayer.currentSample?.id == sample.id {
+                        audioPlayer.togglePlayPause()
+                    } else {
+                        try await audioPlayer.loadAndPlay(sample)
+                    }
+                } catch {
+                    print("Failed to play sample: \(error)")
+                }
+            }
         }
         .onDrag {
             // Provide file URL for drag-and-drop to Logic Pro

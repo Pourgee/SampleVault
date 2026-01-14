@@ -211,10 +211,14 @@ extension FileScanner {
     }
 
     private func generateWaveform(url: URL) async throws -> Data? {
-        // Placeholder for waveform generation
-        // This would extract audio peaks for visualization
-        // Will be implemented in Phase 2
-        return nil
+        // Generate waveform using WaveformGenerator
+        do {
+            let waveformData = try await WaveformGenerator.shared.generateWaveform(from: url, targetSampleCount: 500)
+            return try waveformData.encode()
+        } catch {
+            print("Waveform generation failed: \(error)")
+            return nil
+        }
     }
 }
 
