@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!-- App Sandbox -->
+    <key>com.apple.security.app-sandbox</key>
+    <true/>
+
+    <!-- User Selected File Access -->
+    <key>com.apple.security.files.user-selected.read-only</key>
+    <true/>
+
+    <!-- Security-Scoped Bookmarks -->
+    <key>com.apple.security.files.bookmarks.app-scope</key>
+    <true/>
+
+    <key>com.apple.security.files.bookmarks.document-scope</key>
+    <true/>
+
+    <!-- Audio Input (for waveform analysis) -->
+    <key>com.apple.security.device.audio-input</key>
+    <false/>
+
+    <!-- Network (for future online features) -->
+    <key>com.apple.security.network.client</key>
+    <false/>
+
+    <!-- Hardened Runtime -->
+    <key>com.apple.security.cs.allow-jit</key>
+    <false/>
+
+    <key>com.apple.security.cs.allow-unsigned-executable-memory</key>
+    <false/>
+
+    <key>com.apple.security.cs.allow-dyld-environment-variables</key>
+    <false/>
+
+    <key>com.apple.security.cs.disable-library-validation</key>
+    <false/>
+
+    <!-- Apple Events (for Logic Pro integration) -->
+    <key>com.apple.security.automation.apple-events</key>
+    <true/>
+</dict>
+</plist>
