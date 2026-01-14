@@ -370,10 +370,113 @@ actor DatabaseManager {
             ) ?? 0
         }
     }
+
+    // MARK: - Smart Folder Operations
+    func getAllSmartFolders() async throws -> [SmartFolder] {
+        guard let dbQueue = dbQueue else {
+            throw DatabaseError.notInitialized
+        }
+
+        return try await dbQueue.read { db in
+            let records = try SmartFolderRecord.fetchAll(db, sql: "SELECT * FROM smart_folders ORDER BY name")
+            return try records.map { try SmartFolder(from: $0) }
+        }
+    }
+
+    func insertSmartFolder(_ folder: SmartFolder) async throws {
+        guard let dbQueue = dbQueue else {
+            throw DatabaseError.notInitialized
+        }
+
+        try await dbQueue.write { db in
+            try folder.toRecord().insert(db)
+        }
+    }
+
+    func updateSmartFolder(_ folder: SmartFolder) async throws {
+        guard let dbQueue = dbQueue else {
+            throw DatabaseError.notInitialized
+        }
+
+        var updatedFolder = folder
+        updatedFolder.dateModified = Date()
+
+        try await dbQueue.write { db in
+            try updatedFolder.toRecord().update(db)
+        }
+    }
+
+    func deleteSmartFolder(id: UUID) async throws {
+        guard let dbQueue = dbQueue else {
+            throw DatabaseError.notInitialized
+        }
+
+        try await dbQueue.write { db in
+            try db.execute(sql: "DELETE FROM smart_folders WHERE id = ?", arguments: [id.uuidString])
+        }
+    }
+
+    // MARK: - Recent Search Operations
+    func getRecentSearches(limit: Int = 10) async throws -> [RecentSearch] {
+        guard let dbQueue = dbQueue else {
+            throw DatabaseError.notInitialized
+        }
+
+        return try await dbQueue.read { db in
+            let records = try RecentSearchRecord.fetchAll(
+                db,
+                sql: "SELECT * FROM recent_searches ORDER BY date DESC LIMIT ?",
+                arguments: [limit]
+            )
+            return try records.map { try RecentSearch(from: $0) }
+        }
+    }
+
+    func insertRecentSearch(_ search: RecentSearch) async throws {
+        guard let dbQueue = dbQueue else {
+            throw DatabaseError.notInitialized
+        }
+
+        try await dbQueue.write { db in
+            // Check if similar search exists
+            if let existing = try RecentSearchRecord.fetchOne(
+                db,
+                sql: "SELECT * FROM recent_searches WHERE query = ? ORDER BY date DESC LIMIT 1",
+                arguments: [search.query]
+            ) {
+                // Update existing entry with new date
+                var updated = search
+                updated.date = Date()
+                try updated.toRecord().update(db)
+            } else {
+                // Insert new search
+                try search.toRecord().insert(db)
+            }
+
+            // Keep only last 50 searches
+            try db.execute(
+                sql: """
+                DELETE FROM recent_searches WHERE id NOT IN (
+                    SELECT id FROM recent_searches ORDER BY date DESC LIMIT 50
+                )
+                """
+            )
+        }
+    }
+
+    func clearRecentSearches() async throws {
+        guard let dbQueue = dbQueue else {
+            throw DatabaseError.notInitialized
+        }
+
+        try await dbQueue.write { db in
+            try db.execute(sql: "DELETE FROM recent_searches")
+        }
+    }
 }
 
 // MARK: - Supporting Types
-enum SortOption {
+enum SortOption: String, Codable {
     case name
     case dateAdded
     case duration

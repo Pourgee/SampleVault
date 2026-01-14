@@ -147,6 +147,32 @@ struct DatabaseMigrator {
             }
         }
 
+        // v2: Smart folders and recent searches
+        migrator.registerMigration("v2_smart_folders") { db in
+            // Smart folders table
+            try db.create(table: "smart_folders") { t in
+                t.column("id", .text).primaryKey()
+                t.column("name", .text).notNull()
+                t.column("icon", .text).notNull()
+                t.column("filtersData", .blob).notNull()
+                t.column("dateCreated", .datetime).notNull()
+                t.column("dateModified", .datetime).notNull()
+            }
+
+            try db.create(index: "idx_smart_folders_name", on: "smart_folders", columns: ["name"])
+
+            // Recent searches table
+            try db.create(table: "recent_searches") { t in
+                t.column("id", .text).primaryKey()
+                t.column("query", .text).notNull()
+                t.column("filtersData", .blob).notNull()
+                t.column("date", .datetime).notNull()
+                t.column("resultCount", .integer).notNull()
+            }
+
+            try db.create(index: "idx_recent_searches_date", on: "recent_searches", columns: ["date"])
+        }
+
         try migrator.migrate(db)
     }
 }
@@ -213,6 +239,87 @@ extension Tag {
             color: color,
             isUserCreated: isUserCreated,
             dateCreated: dateCreated
+        )
+    }
+}
+
+// MARK: - Smart Folder Database Record
+struct SmartFolderRecord: Codable, FetchableRecord, PersistableRecord {
+    static let databaseTableName = "smart_folders"
+
+    var id: String
+    var name: String
+    var icon: String
+    var filtersData: Data
+    var dateCreated: Date
+    var dateModified: Date
+
+    enum Columns: String, ColumnExpression {
+        case id, name, icon, filtersData, dateCreated, dateModified
+    }
+}
+
+extension SmartFolder {
+    init(from record: SmartFolderRecord) throws {
+        let filters = try JSONDecoder().decode(SearchFilters.self, from: record.filtersData)
+        self.init(
+            id: UUID(uuidString: record.id) ?? UUID(),
+            name: record.name,
+            icon: record.icon,
+            filters: filters,
+            dateCreated: record.dateCreated,
+            dateModified: record.dateModified
+        )
+    }
+
+    func toRecord() throws -> SmartFolderRecord {
+        let filtersData = try JSONEncoder().encode(filters)
+        return SmartFolderRecord(
+            id: id.uuidString,
+            name: name,
+            icon: icon,
+            filtersData: filtersData,
+            dateCreated: dateCreated,
+            dateModified: dateModified
+        )
+    }
+}
+
+// MARK: - Recent Search Database Record
+struct RecentSearchRecord: Codable, FetchableRecord, PersistableRecord {
+    static let databaseTableName = "recent_searches"
+
+    var id: String
+    var query: String
+    var filtersData: Data
+    var date: Date
+    var resultCount: Int
+
+    enum Columns: String, ColumnExpression {
+        case id, query, filtersData, date, resultCount
+    }
+}
+
+extension RecentSearch {
+    init(from record: RecentSearchRecord) throws {
+        let filters = try JSONDecoder().decode(SearchFilters.self, from: record.filtersData)
+        self.init(
+            id: UUID(uuidString: record.id) ?? UUID(),
+            query: record.query,
+            filters: filters,
+            date: record.date,
+            resultCount: record.resultCount
+        )
+    }
+
+    func toRecord() throws -> RecentSearchRecord {
+        let filtersData = try JSONEncoder().encode(filters)
+        return RecentSearchRecord(
+            id: id.uuidString,
+            query: query,
+            filtersData: filtersData,
+            date: date,
+            resultCount: resultCount
         )
     }
 }
