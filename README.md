@@ -35,7 +35,7 @@ SampleVault is a native macOS application designed specifically for music produc
 |-------|-----------|
 | UI | SwiftUI + AppKit |
 | Audio | AVAudioEngine |
-| Analysis | Accelerate framework (FFT), AudioKit (BPM) |
+| Analysis | Accelerate framework (FFT/DSP), Custom BPM detection (onset + autocorrelation), Key detection (chromagram + Krumhansl-Schmuckler) |
 | Database | SQLite via GRDB.swift |
 | Waveform | Custom Core Graphics rendering |
 | Concurrency | Swift async/await, actors |
@@ -45,9 +45,9 @@ SampleVault is a native macOS application designed specifically for music produc
 ```
 SampleVault/
 ├── Sources/
-│   ├── Models/           # Data models (Sample, Category, Tag)
+│   ├── Models/           # Data models (Sample, Category, Tag, SmartFolder)
 │   ├── Database/         # SQLite schema and manager
-│   ├── Services/         # Business logic (Scanner, Bookmarks)
+│   ├── Services/         # Business logic (Scanner, Bookmarks, AudioAnalyzer, AnalysisQueue)
 │   ├── Views/           # SwiftUI views and components
 │   └── Utils/           # Helper utilities
 ├── Resources/           # Assets and resources
@@ -131,12 +131,15 @@ open SampleVault.xcodeproj
 - [x] Recent searches dropdown with result counts
 - [x] Smart folder management in sidebar
 
-### Phase 5: Analysis
+### Phase 5: Analysis ✅
 
-- [ ] BPM detection algorithm
-- [ ] Key detection algorithm
-- [ ] Background analysis queue
-- [ ] Re-analyze option
+- [x] BPM detection algorithm
+- [x] Key detection algorithm
+- [x] Background analysis queue
+- [x] Re-analyze option
+- [x] Analysis progress tracking
+- [x] Analysis statistics display
+- [x] Batch re-analyze for selected samples
 
 ### Phase 6: Polish & Integration
 
@@ -199,6 +202,17 @@ open SampleVault.xcodeproj
 - **Recent Searches**: Click the clock icon in search bar to access recent searches
 - **Search Tracking**: Searches are automatically saved with result counts
 - **Quick Reapply**: Click any recent search to instantly restore that search state
+
+### Audio Analysis (BPM & Key Detection)
+
+- **Automatic Analysis**: Enable "Auto-analyze BPM and key" in Settings → Analysis to automatically analyze samples on import
+- **Manual Analysis**: Go to Settings → Analysis and click "Analyze Unanalyzed Samples" to analyze all samples that haven't been analyzed yet
+- **Re-analyze Samples**: Select samples in the library, then click "Re-analyze" in batch operations toolbar to re-detect BPM and key
+- **Analysis Progress**: When analysis is running, a progress bar appears showing current status and sample being analyzed
+- **Analysis Statistics**: View analysis stats (analyzed vs unanalyzed) in Settings → Analysis
+- **Cancel Analysis**: Click the X button in the analysis progress bar to cancel the current analysis operation
+- **Search by BPM**: Use the filter panel to search for samples within specific BPM ranges
+- **Search by Key**: Use the filter panel to find samples in a specific musical key
 
 ### Logic Pro Integration
 

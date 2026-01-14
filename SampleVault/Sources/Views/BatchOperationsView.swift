@@ -68,6 +68,16 @@ struct BatchOperationsView: View {
                 .disabled(viewModel.selectedSamples.isEmpty)
 
                 Button(action: {
+                    Task {
+                        await viewModel.reanalyzeSelected()
+                    }
+                }) {
+                    Label("Re-analyze", systemImage: "waveform.circle")
+                }
+                .buttonStyle(.bordered)
+                .disabled(viewModel.selectedSamples.isEmpty || viewModel.isAnalyzing)
+
+                Button(action: {
                     showingDeleteConfirmation = true
                 }) {
                     Label("Delete", systemImage: "trash")

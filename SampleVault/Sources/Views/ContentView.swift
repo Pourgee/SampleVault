@@ -85,6 +85,13 @@ struct ContentView: View {
                 }
             }
 
+            // Analysis progress (if running)
+            if viewModel.isAnalyzing {
+                Divider()
+                AnalysisProgressView()
+                    .environmentObject(viewModel)
+            }
+
             // Batch operations or playback controls at bottom
             Divider()
 

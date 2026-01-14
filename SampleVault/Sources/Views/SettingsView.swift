@@ -94,6 +94,8 @@ struct GeneralSettings: View {
 
 struct AnalysisSettings: View {
     @Binding var autoAnalyze: Bool
+    @EnvironmentObject var viewModel: AppViewModel
+    @State private var stats: (analyzed: Int, unanalyzed: Int, total: Int) = (0, 0, 0)
 
     var body: some View {
         Form {
@@ -104,6 +106,63 @@ struct AnalysisSettings: View {
                 Text("Analysis runs in the background and may take time for large libraries.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
+            }
+
+            Section("Analysis Status") {
+                LabeledContent("Total Samples") {
+                    Text("\(stats.total)")
+                        .foregroundStyle(.secondary)
+                }
+
+                LabeledContent("Analyzed") {
+                    HStack {
+                        Text("\(stats.analyzed)")
+                            .foregroundStyle(.secondary)
+                        if stats.total > 0 {
+                            Text("(\(Int(Double(stats.analyzed) / Double(stats.total) * 100))%)")
+                                .font(.caption)
+                                .foregroundStyle(.tertiary)
+                        }
+                    }
+                }
+
+                LabeledContent("Unanalyzed") {
+                    Text("\(stats.unanalyzed)")
+                        .foregroundStyle(stats.unanalyzed > 0 ? .orange : .secondary)
+                }
+            }
+
+            Section("Actions") {
+                Button(action: {
+                    Task {
+                        await viewModel.startAnalysis()
+                        await refreshStats()
+                    }
+                }) {
+                    Label("Analyze Unanalyzed Samples", systemImage: "waveform.circle")
+                }
+                .disabled(stats.unanalyzed == 0 || viewModel.isAnalyzing)
+
+                Button(action: {
+                    Task {
+                        if viewModel.isSelectionMode && !viewModel.selectedSamples.isEmpty {
+                            await viewModel.reanalyzeSelected()
+                        }
+                        await refreshStats()
+                    }
+                }) {
+                    Label("Re-analyze Selected Samples", systemImage: "arrow.clockwise")
+                }
+                .disabled(!viewModel.isSelectionMode || viewModel.selectedSamples.isEmpty || viewModel.isAnalyzing)
+
+                if viewModel.isAnalyzing {
+                    Button(action: {
+                        viewModel.cancelAnalysis()
+                    }) {
+                        Label("Cancel Analysis", systemImage: "xmark.circle")
+                    }
+                    .foregroundStyle(.red)
+                }
             }
 
             Section("Performance") {
@@ -121,6 +180,15 @@ struct AnalysisSettings: View {
         }
         .formStyle(.grouped)
         .padding()
+        .onAppear {
+            Task {
+                await refreshStats()
+            }
+        }
+    }
+
+    private func refreshStats() async {
+        stats = await AnalysisQueue.shared.getAnalysisStats()
     }
 }
 

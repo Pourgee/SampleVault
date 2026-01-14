@@ -35,10 +35,16 @@ class AppViewModel: ObservableObject {
     @Published var recentSearches: [RecentSearch] = []
     @Published var selectedSmartFolder: SmartFolder?
 
+    // Analysis
+    @Published var isAnalyzing: Bool = false
+    @Published var analysisProgress: AnalysisProgress?
+    @Published var analysisStats: (analyzed: Int, unanalyzed: Int, total: Int) = (0, 0, 0)
+
     // MARK: - Dependencies
     private let database = DatabaseManager.shared
     private let scanner = FileScanner.shared
     private let bookmarkManager = BookmarkManager.shared
+    private let analysisQueue = AnalysisQueue.shared
 
     private var cancellables = Set<AnyCancellable>()
 
@@ -83,6 +89,7 @@ class AppViewModel: ObservableObject {
             smartFolders = try await database.getAllSmartFolders()
             recentSearches = try await database.getRecentSearches()
             await applyFilters()
+            await updateAnalysisStats()
         } catch {
             errorMessage = "Failed to load samples: \(error.localizedDescription)"
         }
@@ -472,5 +479,70 @@ class AppViewModel: ObservableObject {
         } catch {
             errorMessage = "Failed to clear recent searches: \(error.localizedDescription)"
         }
+    }
+
+    // MARK: - Audio Analysis Operations
+    func startAnalysis() async {
+        // Observe analysis queue progress
+        Task {
+            for await _ in Timer.publish(every: 0.1, on: .main, in: .common).autoconnect().values {
+                if analysisQueue.isAnalyzing {
+                    isAnalyzing = true
+                    analysisProgress = analysisQueue.progress
+                } else {
+                    isAnalyzing = false
+                    analysisProgress = nil
+                    // Reload samples to get updated BPM/key data
+                    do {
+                        samples = try await database.getAllSamples()
+                        await applyFilters()
+                        await updateAnalysisStats()
+                    } catch {
+                        print("Failed to reload samples after analysis: \(error)")
+                    }
+                    break
+                }
+            }
+        }
+
+        await analysisQueue.analyzeUnanalyzedSamples()
+    }
+
+    func reanalyzeSelected() async {
+        let samplesToAnalyze = selectedSampleObjects
+
+        // Observe analysis queue progress
+        Task {
+            for await _ in Timer.publish(every: 0.1, on: .main, in: .common).autoconnect().values {
+                if analysisQueue.isAnalyzing {
+                    isAnalyzing = true
+                    analysisProgress = analysisQueue.progress
+                } else {
+                    isAnalyzing = false
+                    analysisProgress = nil
+                    // Reload samples
+                    do {
+                        samples = try await database.getAllSamples()
+                        await applyFilters()
+                        await updateAnalysisStats()
+                    } catch {
+                        print("Failed to reload samples after analysis: \(error)")
+                    }
+                    break
+                }
+            }
+        }
+
+        await analysisQueue.reanalyzeSamples(samplesToAnalyze)
+    }
+
+    func cancelAnalysis() {
+        analysisQueue.cancelAnalysis()
+        isAnalyzing = false
+        analysisProgress = nil
+    }
+
+    func updateAnalysisStats() async {
+        analysisStats = await analysisQueue.getAnalysisStats()
     }
 }
