@@ -26,6 +26,10 @@ class AppViewModel: ObservableObject {
     @Published var sortOption: SortOption = .dateAdded
     @Published var errorMessage: String?
 
+    // Batch selection
+    @Published var isSelectionMode: Bool = false
+    @Published var selectedSamples: Set<UUID> = []
+
     // MARK: - Dependencies
     private let database = DatabaseManager.shared
     private let scanner = FileScanner.shared
@@ -119,7 +123,7 @@ class AppViewModel: ObservableObject {
     }
 
     // MARK: - Search and Filter
-    private func applyFilters() async {
+    func applyFilters() async {
         do {
             filteredSamples = try await database.searchSamples(
                 query: searchQuery.isEmpty ? nil : searchQuery,
@@ -227,5 +231,134 @@ class AppViewModel: ObservableObject {
 
     func categoryCount(_ category: CategoryType) -> Int {
         samples.filter { $0.category == category }.count
+    }
+
+    // MARK: - Batch Operations
+    func toggleSelectionMode() {
+        isSelectionMode.toggle()
+        if !isSelectionMode {
+            selectedSamples.removeAll()
+        }
+    }
+
+    func toggleSampleSelection(_ sampleId: UUID) {
+        if selectedSamples.contains(sampleId) {
+            selectedSamples.remove(sampleId)
+        } else {
+            selectedSamples.insert(sampleId)
+        }
+    }
+
+    func selectAll() {
+        selectedSamples = Set(filteredSamples.map { $0.id })
+    }
+
+    func deselectAll() {
+        selectedSamples.removeAll()
+    }
+
+    var selectedSampleObjects: [Sample] {
+        samples.filter { selectedSamples.contains($0.id) }
+    }
+
+    func batchAddTags(_ tagNames: [String]) async {
+        let samplesToUpdate = selectedSampleObjects
+
+        for sample in samplesToUpdate {
+            var updatedSample = sample
+            for tagName in tagNames {
+                if !updatedSample.tags.contains(tagName) {
+                    updatedSample.tags.append(tagName)
+                }
+            }
+
+            do {
+                try await database.updateSample(updatedSample)
+                if let index = samples.firstIndex(where: { $0.id == sample.id }) {
+                    samples[index] = updatedSample
+                }
+            } catch {
+                print("Failed to update sample: \(error)")
+            }
+        }
+
+        await applyFilters()
+    }
+
+    func batchRemoveTags(_ tagNames: [String]) async {
+        let samplesToUpdate = selectedSampleObjects
+
+        for sample in samplesToUpdate {
+            var updatedSample = sample
+            updatedSample.tags.removeAll { tagNames.contains($0) }
+
+            do {
+                try await database.updateSample(updatedSample)
+                if let index = samples.firstIndex(where: { $0.id == sample.id }) {
+                    samples[index] = updatedSample
+                }
+            } catch {
+                print("Failed to update sample: \(error)")
+            }
+        }
+
+        await applyFilters()
+    }
+
+    func batchSetCategory(_ category: CategoryType?, subcategory: String? = nil) async {
+        let samplesToUpdate = selectedSampleObjects
+
+        for sample in samplesToUpdate {
+            var updatedSample = sample
+            updatedSample.category = category
+            updatedSample.subcategory = subcategory
+
+            do {
+                try await database.updateSample(updatedSample)
+                if let index = samples.firstIndex(where: { $0.id == sample.id }) {
+                    samples[index] = updatedSample
+                }
+            } catch {
+                print("Failed to update sample: \(error)")
+            }
+        }
+
+        await applyFilters()
+    }
+
+    func batchToggleFavorite() async {
+        let samplesToUpdate = selectedSampleObjects
+
+        for sample in samplesToUpdate {
+            var updatedSample = sample
+            updatedSample.isFavorite.toggle()
+
+            do {
+                try await database.updateSample(updatedSample)
+                if let index = samples.firstIndex(where: { $0.id == sample.id }) {
+                    samples[index] = updatedSample
+                }
+            } catch {
+                print("Failed to update sample: \(error)")
+            }
+        }
+
+        await applyFilters()
+    }
+
+    func batchDelete() async {
+        let samplesToDelete = selectedSampleObjects
+
+        for sample in samplesToDelete {
+            do {
+                try await database.deleteSample(id: sample.id)
+                samples.removeAll { $0.id == sample.id }
+            } catch {
+                print("Failed to delete sample: \(error)")
+            }
+        }
+
+        selectedSamples.removeAll()
+        await applyFilters()
     }
 }

@@ -106,15 +106,17 @@ open SampleVault.xcodeproj
 - [x] Volume control
 - [x] Playback integration in UI
 
-### Phase 3: Organization (Partially Complete)
+### Phase 3: Organization ✅
 
 - [x] Category sidebar
-- [x] Tag management (add/remove)
+- [x] Tag management (add/remove/edit)
 - [x] Favorites toggle
 - [x] Auto-categorization
-- [ ] Edit tags UI
-- [ ] Batch tagging UI
-- [ ] Custom categories
+- [x] Tag editor UI with color picker
+- [x] Batch selection mode
+- [x] Batch operations (tags, category, favorite, delete)
+- [x] Tag management in settings
+- [x] Usage statistics for tags
 
 ### Phase 4: Search & Filter (Mostly Complete)
 
@@ -164,6 +166,24 @@ open SampleVault.xcodeproj
 - **Click** waveform to seek/scrub
 - **Loop** toggle for continuous playback
 - **Volume** slider for playback level
+
+### Tag Management
+
+- **Add Tags**: Right-click sample → "Add Tags..." or use batch operations
+- **Color-coded Tags**: Create custom tags with colors
+- **Tag Editor**: Visual tag picker with quick-tag palette
+- **Manage Tags**: Settings → Tags tab to view/create/delete tags
+- **Usage Statistics**: See how many samples use each tag
+
+### Batch Operations
+
+- **Selection Mode**: Click "Select" button in toolbar
+- **Select Samples**: Click samples to select/deselect
+- **Select All**: Quickly select all filtered samples
+- **Batch Tag**: Apply tags to multiple samples at once
+- **Batch Category**: Change category for multiple samples
+- **Batch Favorite**: Toggle favorite status
+- **Batch Delete**: Remove multiple samples with confirmation
 
 ### Logic Pro Integration
 

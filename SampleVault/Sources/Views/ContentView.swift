@@ -57,13 +57,28 @@ struct ContentView: View {
                     .disabled(viewModel.searchQuery.isEmpty &&
                              viewModel.selectedCategory == nil &&
                              !viewModel.filterFavoritesOnly)
+
+                    Divider()
+
+                    Button(action: {
+                        viewModel.toggleSelectionMode()
+                    }) {
+                        Label("Select", systemImage: "checkmark.circle")
+                    }
+                    .disabled(viewModel.filteredSamples.isEmpty)
                 }
             }
 
-            // Playback controls at bottom
+            // Batch operations or playback controls at bottom
             Divider()
-            PlaybackControlsView()
-                .environmentObject(viewModel)
+
+            if viewModel.isSelectionMode {
+                BatchOperationsView()
+                    .environmentObject(viewModel)
+            } else {
+                PlaybackControlsView()
+                    .environmentObject(viewModel)
+            }
         }
         .alert("Error", isPresented: .constant(viewModel.errorMessage != nil)) {
             Button("OK") {

@@ -38,12 +38,18 @@ struct SettingsView: View {
                 Label("Appearance", systemImage: "paintbrush")
             }
 
+            TagManagementView()
+                .tabItem {
+                    Label("Tags", systemImage: "tag")
+                }
+                .environmentObject(viewModel)
+
             AboutView()
                 .tabItem {
                     Label("About", systemImage: "info.circle")
                 }
         }
-        .frame(width: 500, height: 400)
+        .frame(width: 600, height: 500)
     }
 }
 
@@ -190,6 +196,171 @@ struct AboutView: View {
         }
         .padding(40)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+}
+
+struct TagManagementView: View {
+    @EnvironmentObject var viewModel: AppViewModel
+    @State private var tags: [Tag] = []
+    @State private var newTagName: String = ""
+    @State private var newTagColor: Color = .blue
+    @State private var showingNewTag: Bool = false
+    @State private var tagToDelete: Tag?
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("Tag Management")
+                .font(.headline)
+                .padding(.bottom, 4)
+
+            Text("Manage your sample tags. Tags help organize and find samples quickly.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+
+            Divider()
+
+            // Tag list
+            ScrollView {
+                LazyVStack(alignment: .leading, spacing: 8) {
+                    ForEach(tags, id: \.id) { tag in
+                        HStack {
+                            Circle()
+                                .fill(tag.color.flatMap { Color(hex: $0) } ?? .gray)
+                                .frame(width: 12, height: 12)
+
+                            Text(tag.name)
+                                .font(.body)
+
+                            if !tag.isUserCreated {
+                                Text("Default")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                                    .padding(.horizontal, 6)
+                                    .padding(.vertical, 2)
+                                    .background(Color.gray.opacity(0.2))
+                                    .cornerRadius(4)
+                            }
+
+                            Spacer()
+
+                            // Usage count
+                            Text("\(tagUsageCount(tag.name)) samples")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+
+                            // Delete button (only for user-created tags)
+                            if tag.isUserCreated {
+                                Button(action: {
+                                    tagToDelete = tag
+                                }) {
+                                    Image(systemName: "trash")
+                                        .foregroundStyle(.red)
+                                }
+                                .buttonStyle(.plain)
+                            }
+                        }
+                        .padding(.vertical, 4)
+                        .padding(.horizontal, 8)
+                        .background(Color.gray.opacity(0.05))
+                        .cornerRadius(6)
+                    }
+                }
+            }
+
+            Divider()
+
+            // Add new tag
+            if showingNewTag {
+                HStack {
+                    ColorPicker("", selection: $newTagColor)
+                        .labelsHidden()
+                        .frame(width: 40)
+
+                    TextField("Tag name", text: $newTagName)
+                        .textFieldStyle(.roundedBorder)
+
+                    Button("Add") {
+                        createNewTag()
+                    }
+                    .buttonStyle(.bordered)
+                    .disabled(newTagName.isEmpty)
+
+                    Button("Cancel") {
+                        showingNewTag = false
+                        newTagName = ""
+                    }
+                    .buttonStyle(.bordered)
+                }
+            } else {
+                Button(action: {
+                    showingNewTag = true
+                }) {
+                    Label("Create New Tag", systemImage: "plus.circle")
+                }
+            }
+        }
+        .padding()
+        .onAppear {
+            loadTags()
+        }
+        .alert("Delete Tag", isPresented: .constant(tagToDelete != nil)) {
+            Button("Cancel", role: .cancel) {
+                tagToDelete = nil
+            }
+            Button("Delete", role: .destructive) {
+                if let tag = tagToDelete {
+                    deleteTag(tag)
+                }
+            }
+        } message: {
+            if let tag = tagToDelete {
+                Text("Are you sure you want to delete the tag '\(tag.name)'? This will remove it from all samples.")
+            }
+        }
+    }
+
+    private func loadTags() {
+        Task {
+            tags = try await DatabaseManager.shared.getAllTags()
+        }
+    }
+
+    private func createNewTag() {
+        guard !newTagName.isEmpty else { return }
+
+        let tag = Tag(
+            name: newTagName.lowercased(),
+            color: newTagColor.toHex(),
+            isUserCreated: true
+        )
+
+        Task {
+            do {
+                try await DatabaseManager.shared.insertTag(tag)
+                loadTags()
+
+                newTagName = ""
+                showingNewTag = false
+            } catch {
+                print("Failed to create tag: \(error)")
+            }
+        }
+    }
+
+    private func deleteTag(_ tag: Tag) {
+        Task {
+            do {
+                try await DatabaseManager.shared.deleteTag(name: tag.name)
+                loadTags()
+                tagToDelete = nil
+            } catch {
+                print("Failed to delete tag: \(error)")
+            }
+        }
+    }
+
+    private func tagUsageCount(_ tagName: String) -> Int {
+        viewModel.samples.filter { $0.tags.contains(tagName) }.count
     }
 }
 

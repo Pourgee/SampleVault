@@ -16,11 +16,17 @@ struct SampleListView: View {
                 ForEach(viewModel.filteredSamples) { sample in
                     SampleRow(sample: sample)
                         .background(
-                            viewModel.selectedSample?.id == sample.id ?
-                                Color.accentColor.opacity(0.2) : Color.clear
+                            viewModel.isSelectionMode && viewModel.selectedSamples.contains(sample.id) ?
+                                Color.accentColor.opacity(0.15) :
+                                (!viewModel.isSelectionMode && viewModel.selectedSample?.id == sample.id ?
+                                    Color.accentColor.opacity(0.2) : Color.clear)
                         )
                         .onTapGesture {
-                            viewModel.selectedSample = sample
+                            if viewModel.isSelectionMode {
+                                viewModel.toggleSampleSelection(sample.id)
+                            } else {
+                                viewModel.selectedSample = sample
+                            }
                         }
                 }
             }
@@ -34,6 +40,7 @@ struct SampleRow: View {
     let sample: Sample
 
     @State private var isHovering = false
+    @State private var showingTagEditor = false
     @ObservedObject var audioPlayer = AudioPlayer.shared
 
     var isPlayingThisSample: Bool {
@@ -42,6 +49,16 @@ struct SampleRow: View {
 
     var body: some View {
         HStack(spacing: 12) {
+            // Selection checkbox (in selection mode)
+            if viewModel.isSelectionMode {
+                Image(systemName: viewModel.selectedSamples.contains(sample.id) ? "checkmark.circle.fill" : "circle")
+                    .font(.title3)
+                    .foregroundStyle(viewModel.selectedSamples.contains(sample.id) ? .accentColor : .secondary)
+                    .onTapGesture {
+                        viewModel.toggleSampleSelection(sample.id)
+                    }
+            }
+
             // Play indicator / category icon
             ZStack {
                 Circle()
@@ -145,7 +162,7 @@ struct SampleRow: View {
                         }
 
                         Button("Add Tags...") {
-                            // Show tag editor
+                            showingTagEditor = true
                         }
 
                         Divider()
@@ -199,6 +216,10 @@ struct SampleRow: View {
             }
 
             return provider
+        }
+        .sheet(isPresented: $showingTagEditor) {
+            TagEditorView(samples: [sample])
+                .environmentObject(viewModel)
         }
     }
 }
