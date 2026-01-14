@@ -9,6 +9,7 @@ import SwiftUI
 
 struct ContentView: View {
     @EnvironmentObject var viewModel: AppViewModel
+    @State private var showingSmartFolderSave = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -48,6 +49,21 @@ struct ContentView: View {
                     }
 
                     Divider()
+
+                    Button(action: {
+                        showingSmartFolderSave = true
+                    }) {
+                        Label("Save Smart Folder", systemImage: "folder.badge.gearshape")
+                    }
+                    .disabled(viewModel.searchQuery.isEmpty &&
+                             viewModel.selectedCategory == nil &&
+                             !viewModel.filterFavoritesOnly &&
+                             viewModel.filterBPMRange == nil &&
+                             viewModel.filterKey == nil)
+                    .sheet(isPresented: $showingSmartFolderSave) {
+                        SmartFolderEditorView()
+                            .environmentObject(viewModel)
+                    }
 
                     Button(action: {
                         viewModel.clearFilters()

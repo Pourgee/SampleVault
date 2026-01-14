@@ -30,6 +30,11 @@ class AppViewModel: ObservableObject {
     @Published var isSelectionMode: Bool = false
     @Published var selectedSamples: Set<UUID> = []
 
+    // Smart folders and recent searches
+    @Published var smartFolders: [SmartFolder] = []
+    @Published var recentSearches: [RecentSearch] = []
+    @Published var selectedSmartFolder: SmartFolder?
+
     // MARK: - Dependencies
     private let database = DatabaseManager.shared
     private let scanner = FileScanner.shared
@@ -75,6 +80,8 @@ class AppViewModel: ObservableObject {
         do {
             samples = try await database.getAllSamples()
             availableTags = try await database.getAllTags()
+            smartFolders = try await database.getAllSmartFolders()
+            recentSearches = try await database.getRecentSearches()
             await applyFilters()
         } catch {
             errorMessage = "Failed to load samples: \(error.localizedDescription)"
@@ -360,5 +367,110 @@ class AppViewModel: ObservableObject {
 
         selectedSamples.removeAll()
         await applyFilters()
+    }
+
+    // MARK: - Smart Folder Operations
+    func getCurrentFilters() -> SearchFilters {
+        SearchFilters(
+            query: searchQuery.isEmpty ? nil : searchQuery,
+            category: selectedCategory,
+            tags: nil, // Would need UI for tag filtering
+            isFavorite: filterFavoritesOnly ? true : nil,
+            bpmMin: filterBPMRange?.lowerBound,
+            bpmMax: filterBPMRange?.upperBound,
+            key: filterKey,
+            sortBy: sortOption
+        )
+    }
+
+    func createSmartFolder(name: String, icon: String = "folder.badge.gearshape") async {
+        let filters = getCurrentFilters()
+        let smartFolder = SmartFolder(name: name, icon: icon, filters: filters)
+
+        do {
+            try await database.insertSmartFolder(smartFolder)
+            smartFolders = try await database.getAllSmartFolders()
+        } catch {
+            errorMessage = "Failed to create smart folder: \(error.localizedDescription)"
+        }
+    }
+
+    func applySmartFolder(_ folder: SmartFolder) async {
+        selectedSmartFolder = folder
+
+        // Apply all filters from the smart folder
+        searchQuery = folder.filters.query ?? ""
+        selectedCategory = folder.filters.category
+        filterFavoritesOnly = folder.filters.isFavorite ?? false
+
+        if let bpmMin = folder.filters.bpmMin, let bpmMax = folder.filters.bpmMax {
+            filterBPMRange = bpmMin...bpmMax
+        } else {
+            filterBPMRange = nil
+        }
+
+        filterKey = folder.filters.key
+        sortOption = folder.filters.sortBy ?? .dateAdded
+
+        await applyFilters()
+    }
+
+    func deleteSmartFolder(_ folder: SmartFolder) async {
+        do {
+            try await database.deleteSmartFolder(id: folder.id)
+            smartFolders = try await database.getAllSmartFolders()
+            if selectedSmartFolder?.id == folder.id {
+                selectedSmartFolder = nil
+            }
+        } catch {
+            errorMessage = "Failed to delete smart folder: \(error.localizedDescription)"
+        }
+    }
+
+    // MARK: - Recent Search Operations
+    func trackSearch() async {
+        guard !searchQuery.isEmpty || selectedCategory != nil || filterFavoritesOnly else {
+            return
+        }
+
+        let filters = getCurrentFilters()
+        let search = RecentSearch(
+            query: searchQuery.isEmpty ? "Filter search" : searchQuery,
+            filters: filters,
+            resultCount: filteredSamples.count
+        )
+
+        do {
+            try await database.insertRecentSearch(search)
+            recentSearches = try await database.getRecentSearches()
+        } catch {
+            print("Failed to track search: \(error)")
+        }
+    }
+
+    func applyRecentSearch(_ search: RecentSearch) async {
+        searchQuery = search.query == "Filter search" ? "" : search.query
+        selectedCategory = search.filters.category
+        filterFavoritesOnly = search.filters.isFavorite ?? false
+
+        if let bpmMin = search.filters.bpmMin, let bpmMax = search.filters.bpmMax {
+            filterBPMRange = bpmMin...bpmMax
+        } else {
+            filterBPMRange = nil
+        }
+
+        filterKey = search.filters.key
+        sortOption = search.filters.sortBy ?? .dateAdded
+
+        await applyFilters()
+    }
+
+    func clearRecentSearches() async {
+        do {
+            try await database.clearRecentSearches()
+            recentSearches = []
+        } catch {
+            errorMessage = "Failed to clear recent searches: \(error.localizedDescription)"
+        }
     }
 }

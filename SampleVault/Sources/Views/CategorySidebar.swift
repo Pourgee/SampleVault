@@ -9,6 +9,7 @@ import SwiftUI
 
 struct CategorySidebar: View {
     @EnvironmentObject var viewModel: AppViewModel
+    @State private var showingSmartFolderEditor = false
 
     var body: some View {
         List(selection: Binding(
@@ -49,6 +50,41 @@ struct CategorySidebar: View {
                 })
             }
 
+            // Smart Folders Section
+            Section {
+                ForEach(viewModel.smartFolders) { folder in
+                    Button(action: {
+                        Task {
+                            await viewModel.applySmartFolder(folder)
+                        }
+                    }) {
+                        Label {
+                            Text(folder.name)
+                        } icon: {
+                            Image(systemName: folder.icon)
+                        }
+                    }
+                    .buttonStyle(.plain)
+                    .contextMenu {
+                        Button("Delete", role: .destructive) {
+                            Task {
+                                await viewModel.deleteSmartFolder(folder)
+                            }
+                        }
+                    }
+                }
+
+                Button(action: {
+                    showingSmartFolderEditor = true
+                }) {
+                    Label("New Smart Folder", systemImage: "plus.circle")
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(.accentColor)
+            } header: {
+                Text("Smart Folders")
+            }
+
             Section("Categories") {
                 ForEach(CategoryType.allCases.filter { $0 != .uncategorized }, id: \.self) { category in
                     CategoryRow(category: category)
@@ -73,6 +109,10 @@ struct CategorySidebar: View {
         }
         .listStyle(.sidebar)
         .navigationTitle("Library")
+        .sheet(isPresented: $showingSmartFolderEditor) {
+            SmartFolderEditorView()
+                .environmentObject(viewModel)
+        }
     }
 }
 

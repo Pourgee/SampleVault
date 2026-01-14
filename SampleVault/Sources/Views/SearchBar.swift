@@ -10,30 +10,56 @@ import SwiftUI
 struct SearchBar: View {
     @EnvironmentObject var viewModel: AppViewModel
     @State private var showFilters = false
+    @State private var showRecentSearches = false
+    @FocusState private var isSearchFieldFocused: Bool
 
     var body: some View {
         HStack(spacing: 12) {
-            // Search field
-            HStack {
-                Image(systemName: "magnifyingglass")
-                    .foregroundStyle(.secondary)
+            // Search field with recent searches dropdown
+            VStack(spacing: 0) {
+                HStack {
+                    Image(systemName: "magnifyingglass")
+                        .foregroundStyle(.secondary)
 
-                TextField("Search samples...", text: $viewModel.searchQuery)
-                    .textFieldStyle(.plain)
+                    TextField("Search samples...", text: $viewModel.searchQuery)
+                        .textFieldStyle(.plain)
+                        .focused($isSearchFieldFocused)
+                        .onSubmit {
+                            Task {
+                                await viewModel.trackSearch()
+                            }
+                        }
 
-                if !viewModel.searchQuery.isEmpty {
-                    Button(action: {
-                        viewModel.searchQuery = ""
-                    }) {
-                        Image(systemName: "xmark.circle.fill")
-                            .foregroundStyle(.secondary)
+                    if !viewModel.searchQuery.isEmpty {
+                        Button(action: {
+                            viewModel.searchQuery = ""
+                        }) {
+                            Image(systemName: "xmark.circle.fill")
+                                .foregroundStyle(.secondary)
+                        }
+                        .buttonStyle(.plain)
                     }
-                    .buttonStyle(.plain)
+
+                    // Recent searches menu button
+                    if !viewModel.recentSearches.isEmpty {
+                        Button(action: {
+                            showRecentSearches.toggle()
+                        }) {
+                            Image(systemName: "clock.arrow.circlepath")
+                                .foregroundStyle(.secondary)
+                        }
+                        .buttonStyle(.plain)
+                        .popover(isPresented: $showRecentSearches, arrowEdge: .bottom) {
+                            RecentSearchesView()
+                                .environmentObject(viewModel)
+                                .frame(width: 350)
+                        }
+                    }
                 }
+                .padding(8)
+                .background(Color.gray.opacity(0.15))
+                .cornerRadius(8)
             }
-            .padding(8)
-            .background(Color.gray.opacity(0.15))
-            .cornerRadius(8)
 
             // Filter button
             Button(action: {
@@ -157,6 +183,97 @@ struct FilterPanel: View {
         "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B",
         "Cm", "C#m", "Dm", "D#m", "Em", "Fm", "F#m", "Gm", "G#m", "Am", "A#m", "Bm"
     ]
+}
+
+struct RecentSearchesView: View {
+    @EnvironmentObject var viewModel: AppViewModel
+    @Environment(\.dismiss) var dismiss
+
+    var body: some View {
+        VStack(spacing: 0) {
+            // Header
+            HStack {
+                Text("Recent Searches")
+                    .font(.headline)
+
+                Spacer()
+
+                Button(action: {
+                    Task {
+                        await viewModel.clearRecentSearches()
+                    }
+                }) {
+                    Text("Clear All")
+                        .font(.caption)
+                        .foregroundStyle(.red)
+                }
+                .buttonStyle(.plain)
+            }
+            .padding()
+
+            Divider()
+
+            // Recent searches list
+            ScrollView {
+                VStack(spacing: 0) {
+                    ForEach(viewModel.recentSearches) { search in
+                        Button(action: {
+                            Task {
+                                await viewModel.applyRecentSearch(search)
+                                dismiss()
+                            }
+                        }) {
+                            VStack(alignment: .leading, spacing: 4) {
+                                HStack {
+                                    Image(systemName: "clock.arrow.circlepath")
+                                        .foregroundStyle(.secondary)
+                                        .font(.caption)
+
+                                    Text(search.query)
+                                        .font(.body)
+                                        .lineLimit(1)
+
+                                    Spacer()
+
+                                    Text("\(search.resultCount)")
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                }
+
+                                if !search.filters.description.isEmpty {
+                                    Text(search.filters.description)
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                        .lineLimit(1)
+                                }
+                            }
+                            .padding(.horizontal)
+                            .padding(.vertical, 8)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        .background(
+                            Color.accentColor.opacity(0)
+                        )
+                        .onHover { isHovered in
+                            if isHovered {
+                                NSCursor.pointingHand.push()
+                            } else {
+                                NSCursor.pop()
+                            }
+                        }
+
+                        if search.id != viewModel.recentSearches.last?.id {
+                            Divider()
+                                .padding(.leading)
+                        }
+                    }
+                }
+            }
+            .frame(maxHeight: 300)
+        }
+    }
 }
 
 #Preview {

@@ -19,6 +19,8 @@ SampleVault is a native macOS application designed specifically for music produc
 - 🎵 **Audio Playback** - Low-latency preview with waveform visualization
 - 🎹 **Logic Pro Integration** - Seamless drag-and-drop workflow
 - 🏷️ **Flexible Tagging** - Multiple tags per sample with quick-tag palette
+- 📂 **Smart Folders** - Save complex searches as reusable smart folders
+- 🕐 **Recent Searches** - Quickly access and reapply previous searches
 - ⭐ **Collections** - Favorites, recent plays, and custom smart folders
 
 ### Supported Formats
@@ -118,13 +120,16 @@ open SampleVault.xcodeproj
 - [x] Tag management in settings
 - [x] Usage statistics for tags
 
-### Phase 4: Search & Filter (Mostly Complete)
+### Phase 4: Search & Filter ✅
 
 - [x] Full-text search with FTS5
 - [x] Advanced filter panel (BPM, key, category)
 - [x] Sort options (name, date, duration, BPM, last played)
-- [ ] Smart folders / saved searches
-- [ ] Recent searches history
+- [x] Smart folders / saved searches
+- [x] Recent searches history
+- [x] Smart folder creation from current filters
+- [x] Recent searches dropdown with result counts
+- [x] Smart folder management in sidebar
 
 ### Phase 5: Analysis
 
@@ -184,6 +189,16 @@ open SampleVault.xcodeproj
 - **Batch Category**: Change category for multiple samples
 - **Batch Favorite**: Toggle favorite status
 - **Batch Delete**: Remove multiple samples with confirmation
+
+### Smart Folders & Recent Searches
+
+- **Smart Folders**: Save your current search and filter state as a reusable smart folder
+- **Create Smart Folder**: Apply filters, then click "Save Smart Folder" in toolbar
+- **Access Smart Folders**: Click any smart folder in the sidebar to instantly apply its filters
+- **Manage Smart Folders**: Right-click smart folders to delete
+- **Recent Searches**: Click the clock icon in search bar to access recent searches
+- **Search Tracking**: Searches are automatically saved with result counts
+- **Quick Reapply**: Click any recent search to instantly restore that search state
 
 ### Logic Pro Integration
 
