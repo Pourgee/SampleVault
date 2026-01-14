@@ -3,6 +3,7 @@
 <div align="center">
   <h3>🎵 Native macOS Sample Manager for Music Producers</h3>
   <p>Catalog, search, preview, and access thousands of audio samples with minimal friction.</p>
+  <p><strong>Version 1.0.0 - All Development Phases Complete ✅</strong></p>
 </div>
 
 ---
@@ -84,8 +85,9 @@ open SampleVault.xcodeproj
 
 ### Dependencies
 
-- [GRDB.swift](https://github.com/groue/GRDB.swift) - SQLite toolkit
-- [AudioKit](https://github.com/AudioKit/AudioKit) - Audio analysis
+- [GRDB.swift](https://github.com/groue/GRDB.swift) - SQLite toolkit with FTS5 support
+
+Note: Audio analysis (BPM and key detection) is implemented using native Apple frameworks (AVFoundation, Accelerate) without external dependencies.
 
 ## Development
 
@@ -141,13 +143,16 @@ open SampleVault.xcodeproj
 - [x] Analysis statistics display
 - [x] Batch re-analyze for selected samples
 
-### Phase 6: Polish & Integration
+### Phase 6: Polish & Integration ✅
 
-- [ ] Drag-and-drop to Logic Pro
-- [ ] Global hotkey
-- [ ] Float-on-top mode
-- [ ] Compact/mini mode
-- [ ] Settings panel enhancements
+- [x] Drag-and-drop to Logic Pro
+- [x] Global hotkey (⌥⌘S for show/hide window)
+- [x] Float-on-top mode
+- [x] Compact/mini mode
+- [x] Settings panel enhancements
+- [x] Security-scoped bookmark handling for drag operations
+- [x] Window level management
+- [x] Hotkey registration and management
 
 ## Usage
 
@@ -216,9 +221,37 @@ open SampleVault.xcodeproj
 
 ### Logic Pro Integration
 
-1. Select sample(s) in SampleVault
-2. Drag directly into Logic Pro arrangement
-3. Sample is automatically imported
+- **Drag and Drop**: Drag samples directly from SampleVault into Logic Pro
+- **Security-Scoped Access**: Files maintain proper permissions during drag operations
+- **Multi-Sample Support**: Drag multiple samples at once (select in batch mode first)
+- **Automatic Import**: Samples are automatically added to your Logic Pro project
+
+### Window Management
+
+- **Float on Top**: Enable in Settings → General to keep SampleVault above other windows
+- **Compact Mode**: Enable in Settings → General for a minimal window (400x600)
+- **Global Hotkey**: Press ⌥⌘S to show/hide the SampleVault window from anywhere
+- **Window Level Control**: Automatically manages window z-order for optimal workflow
+- **Persistent Settings**: Your window preferences are saved between sessions
+
+### Compact Mode Features
+
+- **Minimal Interface**: Streamlined UI with just search bar, sample list, and playback controls
+- **Quick Search**: Instant filtering without the full sidebar
+- **Drag Support**: Drag samples to Logic Pro even in compact mode
+- **Essential Metadata**: Shows BPM, key, and duration for each sample
+- **Playback Controls**: Full audio playback capabilities in a smaller footprint
+
+## Keyboard Shortcuts
+
+| Shortcut | Action |
+|----------|--------|
+| ⌥⌘S | Show/hide window (global) |
+| ⌘I | Import folder |
+| Space | Play/pause current sample |
+| Esc | Stop playback |
+| ⌘, | Open settings |
+| Double-click | Play sample |
 
 ## Performance Targets
 

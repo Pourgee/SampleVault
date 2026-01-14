@@ -204,14 +204,23 @@ struct SampleRow: View {
             let provider = NSItemProvider()
             provider.suggestedName = sample.filename
 
-            // Add file URL
-            if let url = URL(string: "file://\(sample.path)") {
-                provider.registerFileRepresentation(
-                    forTypeIdentifier: "public.file-url",
-                    visibility: .all
-                ) { completion in
-                    completion(url, true, nil)
-                    return nil
+            // Resolve security-scoped bookmark and provide file URL
+            Task {
+                if let url = await BookmarkManager.shared.resolveBookmark(sample.bookmarkData) {
+                    let accessing = url.startAccessingSecurityScopedResource()
+
+                    // Register file URL for drag operation
+                    provider.registerFileRepresentation(
+                        forTypeIdentifier: "public.audio",
+                        fileOptions: [],
+                        visibility: .all
+                    ) { completion in
+                        completion(url, false, nil)
+                        if accessing {
+                            url.stopAccessingSecurityScopedResource()
+                        }
+                        return nil
+                    }
                 }
             }
 
