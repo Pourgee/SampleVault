@@ -169,13 +169,15 @@ extension FileScanner {
     func analyzeSample(_ sample: Sample) async throws -> Sample {
         var updatedSample = sample
 
-        // Load audio file
-        guard let url = try? await BookmarkManager.shared.accessSecurityScopedResourceAsync(
-            sample.bookmarkData
-        ) { url in
-            return url
-        } else {
+        // Resolve bookmark and perform analysis with security-scoped access
+        let url = try BookmarkManager.shared.resolveBookmark(sample.bookmarkData)
+
+        guard url.startAccessingSecurityScopedResource() else {
             throw ScanError.fileNotAccessible
+        }
+
+        defer {
+            url.stopAccessingSecurityScopedResource()
         }
 
         // Detect BPM
