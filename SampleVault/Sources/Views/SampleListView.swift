@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import AppKit
 
 struct SampleListView: View {
     @EnvironmentObject var viewModel: AppViewModel
@@ -206,7 +207,8 @@ struct SampleRow: View {
 
             // Resolve security-scoped bookmark and provide file URL
             Task {
-                if let url = await BookmarkManager.shared.resolveBookmark(sample.bookmarkData) {
+                do {
+                    let url = try BookmarkManager.shared.resolveBookmark(sample.bookmarkData)
                     let accessing = url.startAccessingSecurityScopedResource()
 
                     // Register file URL for drag operation
@@ -221,6 +223,8 @@ struct SampleRow: View {
                         }
                         return nil
                     }
+                } catch {
+                    print("Failed to resolve bookmark: \(error)")
                 }
             }
 

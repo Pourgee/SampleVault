@@ -7,6 +7,7 @@
 
 import Foundation
 import AVFoundation
+import QuartzCore
 
 @MainActor
 class AudioPlayer: ObservableObject {
@@ -211,6 +212,13 @@ class AudioPlayer: ObservableObject {
 
     func toggleLoop() {
         isLooping.toggle()
+    }
+
+    // MARK: - Computed Properties
+    var formattedTime: String {
+        let minutes = Int(currentTime) / 60
+        let seconds = Int(currentTime) % 60
+        return String(format: "%d:%02d", minutes, seconds)
     }
 
     // MARK: - Cleanup

@@ -101,10 +101,7 @@ class AnalysisQueue: ObservableObject {
     private func analyzeSample(_ sample: Sample) async {
         do {
             // Resolve file URL with security-scoped access
-            guard let url = await bookmarkManager.resolveBookmark(sample.bookmarkData) else {
-                print("Failed to resolve bookmark for sample: \(sample.filename)")
-                return
-            }
+            let url = try bookmarkManager.resolveBookmark(sample.bookmarkData)
 
             let accessing = url.startAccessingSecurityScopedResource()
             defer {

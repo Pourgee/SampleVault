@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import AppKit
 
 struct SearchBar: View {
     @EnvironmentObject var viewModel: AppViewModel
